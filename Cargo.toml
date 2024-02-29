@@ -1,0 +1,8 @@
+[workspace]
+members = [ "rpc",
+  "walletconnect"
+]
+
+exclude = [ ]
+
+resolver = "2"

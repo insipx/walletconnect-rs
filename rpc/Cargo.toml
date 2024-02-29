@@ -1,0 +1,16 @@
+[package]
+name = "walletconnect-rpc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tracing = "0.1.28"
+thiserror = "1.0.24"
+jsonrpsee = { version = "0.22.1", features = ["ws-client", "client-core", "macros"] }
+serde = "1"
+serde_json = "1"
+tokio = { version = "1.36", features = ["full"] }
+
+[dev-dependencies]
+tracing-subscriber = "0.3.18"
+
