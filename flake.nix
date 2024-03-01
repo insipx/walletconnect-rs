@@ -18,13 +18,7 @@
         fenixPkgs = fenix.packages.${system};
         linters = import "${environments}/linters.nix" { inherit pkgs; };
         rust-toolchain = with fenixPkgs;
-          combine [
-            minimal.rustc
-            minimal.cargo
-            complete.clippy
-            complete.rustfmt
-            targets.wasm32-unknown-unknown.latest.rust-std
-          ];
+          combine [ stable.rustc stable.cargo stable.clippy stable.rustfmt ];
         nativeBuildInputs = with pkgs; [ pkg-config ];
         buildInputs = with pkgs;
           [
@@ -33,20 +27,10 @@
             rust-analyzer
             llvmPackages_16.libcxxClang
             mktemp
-            markdownlint-cli
-            shellcheck
-            buf
             curl
-            wasm-pack
-            twiggy
-            wasm-bindgen-cli
-            binaryen
             linters
-            tokio-console
             cargo-nextest
-            inferno
 
-            weechat
           ] ++ lib.optionals isDarwin [
             libiconv
             frameworks.CoreServices
