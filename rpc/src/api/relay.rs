@@ -1,9 +1,7 @@
-use crate::types::prelude::*;
+use crate::types::*;
 use jsonrpsee::{
-    core::{client::Subscription, SubscriptionResult},
+    // core::{client::Subscription, SubscriptionResult},
     proc_macros::rpc,
-    types::ErrorObjectOwned,
-    ws_client::{WsClientBuilder, HeaderMap},
 };
 
 #[rpc(client)]
@@ -11,8 +9,8 @@ pub trait Relay {
     #[method(name = "publish")]
     fn publish(&self, topic: String, message: String, policy: Policy);
 
-    #[subscription(name = "subscribe", item = serde_json::Value)]
-    fn relay_subscribe(&self, topic: String);
+    #[subscription(name = "irn_subscribe", unsubscribe = "irn_unsubscribe", item = serde_json::Value)]
+    fn relay_subscribe(&self, topic: String) -> SubscriptionResult;
 }
 
 #[cfg(test)]

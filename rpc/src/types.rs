@@ -1,20 +1,17 @@
-pub mod crypto;
-pub mod did;
-pub mod identity;
+// pub mod crypto;
+// pub mod did;
+// pub mod identity;
 pub mod pairing;
 pub mod relay;
-pub mod storage;
-pub mod sync;
-pub mod verify;
+// pub mod storage;
+// pub mod sync;
+// pub mod verify;
 
-#[allow(unused_imports)]
-pub mod prelude {
-    pub use super::crypto::*;
-    pub use super::did::*;
-    pub use super::identity::*;
-    pub use super::pairing::*;
-    pub use super::relay::*;
-    pub use super::storage::*;
-    pub use super::sync::*;
-    pub use super::verify::*;
-}
+// pub use crypto::*;
+// pub use did::*;
+// pub use identity::*;
+pub use pairing::*;
+pub use relay::*;
+// pub use storage::*;
+// pub use sync::*;
+// pub use verify::*;

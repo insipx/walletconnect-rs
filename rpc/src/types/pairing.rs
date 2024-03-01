@@ -9,6 +9,7 @@
 //! value       = STRING
 
 use crate::error::TypeError;
+use std::str::FromStr;
 
 peg::parser! {
     grammar pairing_uri_parser() for str {
@@ -47,6 +48,30 @@ pub struct PairingUri {
 impl PairingUri {
     pub fn parse<S: AsRef<str>>(uri: S) -> Result<PairingUri, TypeError> {
         pairing_uri_parser::uri(uri.as_ref()).map_err(Into::into)
+    }
+}
+
+impl FromStr for PairingUri {
+    type Err = TypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        PairingUri::parse(s)
+    }
+}
+
+impl TryFrom<&str> for PairingUri {
+    type Error = TypeError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        PairingUri::parse(value)
+    }
+}
+
+impl TryFrom<String> for PairingUri {
+    type Error = TypeError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        PairingUri::parse(value)
     }
 }
 
