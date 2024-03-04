@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
-use walletconnect_rpc::{api::RelayClient, Client};
+use walletconnect_rpc::{api::core::RelayClient, Client};
 
 mod app;
 
@@ -13,10 +13,7 @@ async fn main() -> Result<()> {
 
     let client = Client::new().await?;
     log::info!("Client instantiated with pairing_uri: {:#?}", pairing_uri);
-    let val = client
-        .inner()
-        .relay_subscribe(pairing_uri.topic.clone())
-        .await?;
+    let val = client.inner().relay_subscribe(pairing_uri.topic.clone()).await?;
     println!("\n[client1] subscribed: topic={}", pairing_uri.topic);
 
     Ok(())
@@ -24,8 +21,5 @@ async fn main() -> Result<()> {
 
 fn init_logging() {
     let fmt = fmt::layer().compact();
-    Registry::default()
-        .with(EnvFilter::from_default_env())
-        .with(fmt)
-        .init()
+    Registry::default().with(EnvFilter::from_default_env()).with(fmt).init()
 }

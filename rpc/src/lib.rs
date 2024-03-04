@@ -3,6 +3,7 @@ pub mod auth;
 pub mod error;
 pub mod types;
 
+use ed25519_dalek::{SigningKey, VerifyingKey};
 use jsonrpsee::{
     core::traits::IdKind,
     types::Id,
@@ -11,27 +12,28 @@ use jsonrpsee::{
 use rand::Rng as _;
 
 use crate::{auth::AuthToken, error::ClientError};
-use ed25519_dalek::{SigningKey, VerifyingKey};
 
-// better-walletconnect-rs
+// Awalletconnect-rs-new
 pub const PROJECT_ID: &str = "c391bf7391b67ffbd8b8241389471ef8";
 
+pub const REQUEST_ID_ENTROPY: u32 = 6;
+
+#[derive(Debug)]
 pub struct Client {
     client: WsClient<RequestIdGen>,
     key: SigningKey,
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[allow(dead_code)]
 pub struct RequestIdGen;
 
 impl IdKind for RequestIdGen {
     fn into_id(&self, _: u64) -> Id<'static> {
         let date = chrono::Utc::now().timestamp_millis() as u64;
-        let entropy = 6;
-        let date = date * 10_u64.pow(entropy);
+        let date = date * 10_u64.pow(REQUEST_ID_ENTROPY);
 
-        let extra = rand::thread_rng().gen_range(0..10_u64.pow(entropy));
+        let extra = rand::thread_rng().gen_range(0..10_u64.pow(REQUEST_ID_ENTROPY));
 
         Id::Number(date + extra)
     }
@@ -49,9 +51,7 @@ impl Client {
 
         let client = WsClientBuilder::<RequestIdGen>::default()
             .id_format(RequestIdGen)
-            .build(format!(
-                "wss://relay.walletconnect.com/?projectId={PROJECT_ID}&auth={token}"
-            ))
+            .build(format!("wss://relay.walletconnect.com/?projectId={PROJECT_ID}&auth={token}"))
             .await?;
 
         Ok(Self { client, key })
@@ -70,10 +70,14 @@ impl Client {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Once;
+    use std::{future::Future, sync::Once};
+
+    use anyhow::Result;
     use tracing_subscriber::{
         fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry,
     };
+
+    use super::*;
 
     static INIT: Once = Once::new();
 
@@ -81,10 +85,16 @@ mod test {
     fn __init_test_logging() {
         INIT.call_once(|| {
             let fmt = fmt::layer().compact();
-            Registry::default()
-                .with(EnvFilter::from_default_env())
-                .with(fmt)
-                .init()
+            Registry::default().with(EnvFilter::from_default_env()).with(fmt).init()
         })
+    }
+
+    pub async fn with_client<R>(fun: impl FnOnce(Client) -> R) -> Result<()>
+    where
+        R: Future<Output = Result<()>>,
+    {
+        let client = Client::new().await?;
+        fun(client).await?;
+        Ok(())
     }
 }

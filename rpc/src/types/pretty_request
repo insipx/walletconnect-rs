@@ -1,0 +1,43 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1709572088224285872,
+  "method": "wc_sessionPropose",
+  "params": {
+    "relays": [
+      {
+        "protocol": "irn"
+      }
+    ],
+    "proposer": {
+      "publicKey": "0a422bef2b0300ebaf1ee01ba851217df088f94614d494c63f2fea9b3b048c46",
+      "metadata": {
+        "name": "walletconnect-rs-new",
+        "description": "walletconnect-rs-new SDK Comms",
+        "url": "https://github.com/insipx/walletconnect-rs-new",
+        "icons": [
+          "https://www.rust-lang.org/static/images/rust-logo-blk.svg",
+          "https://rustacean.net/assets/rustacean-flat-happy.svg"
+        ]
+      }
+    },
+    "requiredNamespaces": {
+      "eip155": {
+        "chains": [
+          "eip155:1",
+          "eip155:11155111"
+        ],
+        "methods": [
+          "eth_sendTransaction",
+          "eth_signTransaction",
+          "eth_sign",
+          "personal_sign",
+          "eth_signTypedData"
+        ],
+        "events": [
+          "chainChanged",
+          "acountsChanged"
+        ]
+      }
+    }
+  }
+}

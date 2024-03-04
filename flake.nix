@@ -18,7 +18,12 @@
         fenixPkgs = fenix.packages.${system};
         linters = import "${environments}/linters.nix" { inherit pkgs; };
         rust-toolchain = with fenixPkgs;
-          combine [ stable.rustc stable.cargo stable.clippy stable.rustfmt ];
+          combine [
+            default.rustc
+            default.cargo
+            default.clippy
+            default.rustfmt
+          ];
         nativeBuildInputs = with pkgs; [ pkg-config ];
         buildInputs = with pkgs;
           [

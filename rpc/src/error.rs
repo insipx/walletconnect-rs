@@ -1,7 +1,7 @@
-use peg::str::LineCol;
-use thiserror::Error;
 use jsonrpsee::core::ClientError as JsonRpcError;
+use peg::str::LineCol;
 use std::convert::Infallible;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum TypeError {
@@ -26,7 +26,6 @@ pub enum AuthError {
     #[error(transparent)]
     OutOrRange(#[from] chrono::OutOfRangeError),
 }
-
 
 impl From<Infallible> for ClientError {
     fn from(_: Infallible) -> Self {

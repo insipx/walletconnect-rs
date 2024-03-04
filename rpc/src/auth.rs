@@ -1,8 +1,8 @@
+use crate::error::AuthError;
 use chrono::{DateTime, Utc};
 use ed25519_dalek::{Signer, SigningKey};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, time::Duration};
-use crate::error::AuthError;
 
 pub const RELAY_WEBSOCKET_ADDRESS: &str = "wss://relay.walletconnect.com";
 
@@ -32,10 +32,7 @@ pub struct JwtHeader<'a> {
 
 impl Default for JwtHeader<'_> {
     fn default() -> Self {
-        Self {
-            typ: JWT_HEADER_TYP,
-            alg: JWT_HEADER_ALG,
-        }
+        Self { typ: JWT_HEADER_TYP, alg: JWT_HEADER_ALG }
     }
 }
 
@@ -90,12 +87,7 @@ pub struct AuthTokenBuilder {
 
 impl AuthTokenBuilder {
     pub fn new(sub: impl Into<String>) -> Self {
-        Self {
-            sub: sub.into(),
-            aud: None,
-            iat: None,
-            ttl: None,
-        }
+        Self { sub: sub.into(), aud: None, iat: None, ttl: None }
     }
 
     pub fn aud(mut self, aud: impl Into<String>) -> Self {

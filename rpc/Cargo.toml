@@ -15,10 +15,13 @@ chrono = "0.4"
 data-encoding = "2.3"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 bs58 = "0.5"
+hex = { version = "0.4", features = ["serde"]}
 rand = "0.8"
 ctor = "0.2.7"
 peg = "0.8"
+enum-as-inner = "0.6"
+url = { version = "2.5", features = ["serde"]}
 
 [dev-dependencies]
 tracing-subscriber.workspace = true 
-
+anyhow.workspace = true
