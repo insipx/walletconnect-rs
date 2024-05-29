@@ -2,7 +2,7 @@ mod keychain;
 pub use keychain::{Result as KeychainResult, *};
 use sha2::Digest;
 
-use crate::{StorageContext, Topic};
+use crate::{Topic, WalletContext};
 
 pub type Result<T> = std::result::Result<T, crate::error::CryptoError>;
 
@@ -17,7 +17,7 @@ pub struct Crypto {
 }
 
 impl Crypto {
-    pub fn new(context: &StorageContext) -> Result<Self> {
+    pub fn new(context: &WalletContext) -> Result<Self> {
         Ok(Self { keychain: Keychain::new(context)? })
     }
 

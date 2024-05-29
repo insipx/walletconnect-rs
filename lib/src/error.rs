@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum WalletConnectError {
     #[error("DB Error {0}")]
     Db(#[from] sled::Error),
+    #[error(transparent)]
+    Rpc(#[from] walletconnect_rpc::error::ClientError),
 }
 
 /// TypeError which occurs during parsing of URIs
@@ -31,4 +33,14 @@ pub enum CryptoError {
 pub enum PairingError {
     #[error(transparent)]
     Crypto(#[from] CryptoError),
+    #[error("Error occured in Pairing Database Tree {0}")]
+    Db(#[from] sled::Error),
+    #[error(transparent)]
+    Rpc(#[from] crate::rpc::error::JsonRpcError),
+}
+
+#[derive(Debug, Error)]
+pub enum ExpiryError {
+    #[error("Error occured in Expiry Database Tree {0}")]
+    Db(#[from] sled::Error),
 }

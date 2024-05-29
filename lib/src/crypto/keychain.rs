@@ -1,11 +1,11 @@
 use const_format::concatcp;
 use sled::Tree;
 
-use crate::{StorageContext, Topic, STORAGE_PREFIX};
+use crate::{Topic, WalletContext, STORAGE_PREFIX};
 
 pub type Result<T> = std::result::Result<T, crate::error::KeychainError>;
 pub const KEYCHAIN: &str = "keychain";
-pub const VERSION: u64 = 1;
+pub const VERSION: u16 = 1;
 pub const NAMESPACE: &str = concatcp!(STORAGE_PREFIX, ":", VERSION, "//", KEYCHAIN);
 
 /// Keychain storing a mapping of topics to symmetric diffie-hellman keys
@@ -24,7 +24,7 @@ fn to_fixed_bytes32<V: AsRef<[u8]>>(v: V) -> [u8; 32] {
 
 impl Keychain {
     /// Instantiate a new Keychain
-    pub fn new(context: &StorageContext) -> Result<Self> {
+    pub fn new(context: &WalletContext) -> Result<Self> {
         let tree = context.db.open_tree(NAMESPACE)?;
 
         Ok(Self { db: tree })

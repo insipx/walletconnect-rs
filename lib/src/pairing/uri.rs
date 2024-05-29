@@ -255,7 +255,7 @@ mod tests {
             .build();
 
         let uri = uri.to_string();
-        println!("{uri}");
+
         assert!(uri.contains(&format!("expiryTimestamp={}", now.timestamp())));
         assert!(uri.contains(&"relay-protocol=irn".to_string()));
         assert!(uri.contains(&"random=moreRandom".to_string()));

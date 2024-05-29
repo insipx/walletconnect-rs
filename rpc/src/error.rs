@@ -1,6 +1,7 @@
-use jsonrpsee::core::ClientError as JsonRpcError;
-use peg::str::LineCol;
 use std::convert::Infallible;
+
+pub use jsonrpsee::core::ClientError as JsonRpcError;
+use peg::str::LineCol;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

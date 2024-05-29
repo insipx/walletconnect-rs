@@ -3,6 +3,8 @@ pub mod auth;
 pub mod error;
 pub mod types;
 
+use std::sync::Arc;
+
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use jsonrpsee::{
     core::traits::IdKind,
@@ -18,9 +20,9 @@ pub const PROJECT_ID: &str = "c391bf7391b67ffbd8b8241389471ef8";
 
 pub const REQUEST_ID_ENTROPY: u32 = 6;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
-    client: WsClient<RequestIdGen>,
+    client: Arc<WsClient<RequestIdGen>>,
     key: SigningKey,
 }
 
@@ -53,6 +55,8 @@ impl Client {
             .id_format(RequestIdGen)
             .build(format!("wss://relay.walletconnect.com/?projectId={PROJECT_ID}&auth={token}"))
             .await?;
+
+        let client = Arc::new(client);
 
         Ok(Self { client, key })
     }
