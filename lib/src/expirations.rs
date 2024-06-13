@@ -1,9 +1,8 @@
 //! Manages the event loop for expirations of keypairs
-
 use const_format::concatcp;
 use sled::Tree;
 
-use crate::{WalletContext, STORAGE_PREFIX};
+use crate::{error::ExpiryError, WalletContext, STORAGE_PREFIX};
 
 pub type Result<T> = std::result::Result<T, crate::error::ExpiryError>;
 pub const EXPIRY: &str = "expiry";
@@ -21,7 +20,8 @@ impl ExpiryManager {
     }
 
     pub fn set_expiry(&self, topic: &[u8; 32], expiry: u64) -> Result<()> {
-        let bytes = rkyv::to_bytes::<_, 16>(&expiry)?;
+        let bytes =
+            rkyv::to_bytes::<_, 16>(&expiry).map_err(|e| ExpiryError::Other(e.to_string()))?;
         self.expirations.insert(topic, bytes.as_slice())?;
         Ok(())
     }
@@ -31,7 +31,8 @@ impl ExpiryManager {
 
         Ok(match bytes {
             Some(bytes) => {
-                let expiry = rkyv::from_bytes::<u64>(&bytes)?;
+                let expiry = rkyv::from_bytes::<u64>(&bytes)
+                    .map_err(|e| ExpiryError::Other(e.to_string()))?;
                 Some(expiry)
             }
             None => None,

@@ -266,6 +266,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "rkyv",
  "serde",
  "wasm-bindgen",
  "windows-targets 0.52.4",
@@ -281,6 +282,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "walletconnect-lib",
  "walletconnect-rpc",
 ]
 
@@ -582,6 +584,15 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "foreign_rkyv"
+version = "0.1.0"
+dependencies = [
+ "rkyv",
+ "rkyv-with",
+ "url",
+]
 
 [[package]]
 name = "form_urlencoded"
@@ -970,6 +981,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "jsonrpsee-client-transport",
  "jsonrpsee-core",
@@ -984,6 +996,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-client-transport"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "futures-channel",
  "futures-util",
@@ -1006,6 +1019,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-core"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "anyhow",
  "async-lock",
@@ -1029,6 +1043,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-http-client"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "async-trait",
  "hyper",
@@ -1047,6 +1062,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-proc-macros"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "heck",
  "proc-macro-crate",
@@ -1058,6 +1074,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-types"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "anyhow",
  "beef",
@@ -1069,6 +1086,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-wasm-client"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "jsonrpsee-client-transport",
  "jsonrpsee-core",
@@ -1078,6 +1096,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-ws-client"
 version = "0.22.1"
+source = "git+https://github.com/insipx/jsonrpsee?branch=insipx/custom-id#d63b03712617f28b9f8e5fe827cc23d1efd807af"
 dependencies = [
  "http",
  "jsonrpsee-client-transport",
@@ -1543,6 +1562,17 @@ dependencies = [
  "seahash",
  "tinyvec",
  "uuid",
+]
+
+[[package]]
+name = "rkyv-with"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3308fa04cf25d994d9f662057b67ef69774f3801d59c723bb644ec9ae83f500"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.52",
 ]
 
 [[package]]
@@ -2268,10 +2298,12 @@ dependencies = [
  "rand",
  "rkyv",
  "serde",
+ "serde_json",
  "sha2",
  "sled",
  "thiserror",
  "tracing",
+ "url",
  "walletconnect-rpc",
  "x25519-dalek",
 ]

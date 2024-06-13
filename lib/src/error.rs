@@ -37,10 +37,24 @@ pub enum PairingError {
     Db(#[from] sled::Error),
     #[error(transparent)]
     Rpc(#[from] crate::rpc::error::JsonRpcError),
+    #[error(transparent)]
+    Expiry(#[from] ExpiryError),
+    #[error(transparent)]
+    Relayer(#[from] RelayerError),
+    #[error("Rkyv Error {0}")]
+    Rkyv(String),
 }
 
 #[derive(Debug, Error)]
 pub enum ExpiryError {
     #[error("Error occured in Expiry Database Tree {0}")]
     Db(#[from] sled::Error),
+    #[error("{0}")]
+    Other(String),
+}
+
+#[derive(Debug, Error)]
+pub enum RelayerError {
+    #[error(transparent)]
+    Rpc(#[from] crate::rpc::error::JsonRpcError),
 }

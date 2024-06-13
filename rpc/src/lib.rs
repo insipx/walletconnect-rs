@@ -15,10 +15,16 @@ use rand::Rng as _;
 
 use crate::{auth::AuthToken, error::ClientError};
 
-// Awalletconnect-rs-new
+// walletconnect-rs-new
 pub const PROJECT_ID: &str = "c391bf7391b67ffbd8b8241389471ef8";
 
+/// This is required to avoid request id collisions
 pub const REQUEST_ID_ENTROPY: u32 = 6;
+
+pub mod prelude {
+    pub use jsonrpsee::core::client::Subscription;
+    // pub use jsonrpsee::Subscription;
+}
 
 #[derive(Debug, Clone)]
 pub struct Client {

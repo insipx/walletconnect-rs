@@ -1,3 +1,4 @@
+#![feature(trivial_bounds)]
 use std::path::Path;
 
 use rpc::Client;
@@ -8,6 +9,8 @@ pub mod crypto;
 pub mod error;
 mod expirations;
 pub mod pairing;
+mod relayer;
+pub mod types;
 
 /// RPC Api Re-Export
 pub mod rpc {

@@ -11,6 +11,7 @@
 use std::{collections::HashMap, fmt, str::FromStr};
 
 use chrono::{DateTime, Utc};
+use rkyv::Archive;
 use serde::{Deserialize, Serialize};
 
 use crate::{error::TypeError, Topic};
@@ -56,7 +57,17 @@ peg::parser! {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(
+    Serialize,
+    Deserialize,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    rkyv::Archive,
+    Debug,
+    Clone,
+    PartialEq,
+)]
+#[archive(check_bytes)]
 pub struct PairingUri {
     pub topic: String,
     version: u16,
@@ -77,6 +88,22 @@ impl PairingUri {
 
     pub fn param(&self, key: &Parameter) -> Option<&PairingParameter> {
         self.parameters.0.get(key)
+    }
+
+    //TODO: we do not handle `Other` correctly
+    /// Decompose the PairingUri into its parts.
+    /// The parts are in order of `Topic`, `SymKey`, `ExpiryTimestamp`, `RelayProtocol` and a
+    /// [`Vec`] of any `String` representing [`PairingParameter::Other`]
+    pub fn decompose(
+        &self,
+    ) -> (&String, Option<&[u8; 32]>, Option<&DateTime<Utc>>, Option<&String>, Vec<&String>) {
+        (
+            &self.topic,
+            self.param(&Parameter::SymKey).map(|k| k.sym_key_unchecked()),
+            self.param(&Parameter::ExpiryTimestamp).map(|t| t.expiry_timestamp_unchecked()),
+            self.param(&Parameter::RelayProtocol).map(|r| r.relay_protocol_unchecked()),
+            vec![],
+        )
     }
 }
 
@@ -102,9 +129,8 @@ impl PairingUriBuilder {
         self
     }
 
-    pub fn expiry_timestamp(mut self, timestamp: DateTime<Utc>) -> Self {
-        self.parameters
-            .insert(Parameter::ExpiryTimestamp, PairingParameter::ExpiryTimestamp(timestamp));
+    pub fn expiry_timestamp(mut self, time: DateTime<Utc>) -> Self {
+        self.parameters.insert(Parameter::ExpiryTimestamp, PairingParameter::ExpiryTimestamp(time));
         self
     }
 
@@ -127,7 +153,18 @@ impl PairingUriBuilder {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Serialize,
+    Deserialize,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    rkyv::Archive,
+    Clone,
+    PartialEq,
+    Eq,
+)]
+#[archive(check_bytes)]
 pub struct Parameters(HashMap<Parameter, PairingParameter>);
 
 impl fmt::Display for Parameters {
@@ -146,7 +183,19 @@ impl fmt::Display for Parameters {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, enum_as_inner::EnumAsInner)]
+#[derive(
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    enum_as_inner::EnumAsInner,
+)]
+#[archive(check_bytes)]
 pub enum PairingParameter {
     SymKey([u8; 32]),
     ExpiryTimestamp(DateTime<Utc>),
@@ -165,7 +214,55 @@ impl fmt::Display for PairingParameter {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash, Debug, PartialEq, Eq, derive_more::Display)]
+impl PairingParameter {
+    pub fn sym_key_unchecked(&self) -> &[u8; 32] {
+        if let PairingParameter::SymKey(key) = self {
+            key
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+
+    pub fn expiry_timestamp_unchecked(&self) -> &DateTime<Utc> {
+        if let PairingParameter::ExpiryTimestamp(timestamp) = self {
+            timestamp
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+
+    pub fn relay_protocol_unchecked(&self) -> &String {
+        if let PairingParameter::RelayProtocol(protocol) = self {
+            protocol
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+
+    pub fn other_unchecked(&self) -> &String {
+        if let PairingParameter::Other(o) = self {
+            o
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+}
+
+#[derive(
+    Serialize,
+    Deserialize,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    Archive,
+    Clone,
+    Hash,
+    Debug,
+    PartialEq,
+    Eq,
+    derive_more::Display,
+)]
+#[archive_attr(derive(Hash, PartialEq, Eq))]
+#[archive(check_bytes)]
 pub enum Parameter {
     #[display(fmt = "symKey")]
     SymKey,

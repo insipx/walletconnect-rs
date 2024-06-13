@@ -1,5 +1,5 @@
 [workspace]
-members = [ "cli", "lib", "rpc",
+members = [ "cli", "foreign_rkyv", "lib", "rpc",
   "walletconnect"
 ]
 
@@ -12,6 +12,7 @@ log = "0.4"
 tracing = "0.1"
 tracing-subscriber = {version = "0.3", features = ["env-filter"] }
 walletconnect-rpc = { path = "./rpc" }
+walletconnect-lib = { path = "./lib" }
 tokio = { version = "1.36", features = ["full"] }
 thiserror = "1.0.24"
 anyhow = "1.0"

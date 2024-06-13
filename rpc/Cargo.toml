@@ -14,7 +14,7 @@ serde_json.workspace = true
 hex.workspace = true
 rand.workspace = true 
 chrono.workspace = true
-jsonrpsee = { path = "/Users/insipx/Projects/parity/workspace-jsonrpsee/insipx/custom-id/jsonrpsee", features = ["client", "macros"] }
+jsonrpsee = { git = "https://github.com/insipx/jsonrpsee", branch = "insipx/custom-id", features = ["client", "macros"] }
 data-encoding = "2.3"
 bs58 = "0.5"
 ctor = "0.2.7"

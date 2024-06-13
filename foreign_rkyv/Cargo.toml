@@ -1,0 +1,9 @@
+[package]
+name = "foreign_rkyv"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rkyv = { version = "0.7", features = ["validation"]}
+rkyv-with = "0.1.2"
+url = "2.5"

@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use walletconnect_lib::pairing::uri::PairingUri;
 use walletconnect_rpc::types::*;
 
 /// Example pairing CLI for WalletConnect
