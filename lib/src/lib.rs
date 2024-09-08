@@ -1,5 +1,5 @@
 #![feature(trivial_bounds)]
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use rpc::Client;
 
@@ -25,19 +25,19 @@ pub type Result<T> = std::result::Result<T, WalletConnectError>;
 /// the global persistant storage type
 #[derive(Clone, Debug)]
 pub struct WalletContext {
-    db: sled::Db,
+    db: Arc<redb::Database>,
     rpc: rpc::Client,
 }
 
 impl WalletContext {
     pub async fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
         let rpc = Client::new().await?;
-        Ok(Self { db: sled::open(path)?, rpc })
+        Ok(Self { db: Arc::new(redb::Database::create(path)?), rpc })
     }
 }
 
-/// A Topic which is the Sha256 Hash of the Symmetric Key.
-pub type Topic = [u8; 32];
+/// The symmetric public key used for encryption
+pub type SymKey = [u8; 32];
 
 /// Convenience Contants for time using second as the smallest unit.
 #[allow(dead_code)]

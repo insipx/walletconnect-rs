@@ -1,7 +1,11 @@
-use const_format::concatcp;
-use sled::Tree;
+use std::sync::Arc;
 
-use crate::{Topic, WalletContext, STORAGE_PREFIX};
+use const_format::concatcp;
+use redb::{Database, TableDefinition};
+
+use crate::{types::Topic, WalletContext, STORAGE_PREFIX};
+
+const TABLE: TableDefinition<&Topic, [u8; 32]> = TableDefinition::new(NAMESPACE);
 
 pub type Result<T> = std::result::Result<T, crate::error::KeychainError>;
 pub const KEYCHAIN: &str = "keychain";
@@ -12,22 +16,14 @@ pub const NAMESPACE: &str = concatcp!(STORAGE_PREFIX, ":", VERSION, "//", KEYCHA
 pub struct Keychain {
     /// The namespaced Keychain database
     /// stores a mapping of Topics to symmetric encryption keys
-    db: Tree,
+    db: Arc<Database>,
 }
 
-fn to_fixed_bytes32<V: AsRef<[u8]>>(v: V) -> [u8; 32] {
-    let mut fixed = [0u8; 32];
-    let slice = v.as_ref();
-    fixed.copy_from_slice(&slice[0..32]);
-    fixed
-}
-
+// TODO: Make this into a trait for tables in redb
 impl Keychain {
     /// Instantiate a new Keychain
     pub fn new(context: &WalletContext) -> Result<Self> {
-        let tree = context.db.open_tree(NAMESPACE)?;
-
-        Ok(Self { db: tree })
+        Ok(Self { db: context.db.clone() })
     }
 
     /// Get the db-namespace this module uses
@@ -36,23 +32,38 @@ impl Keychain {
     }
 
     /// Sets a topic to a symmetric key, and returns the old symmetric key if it existed.
-    pub fn set(&self, topic: &Topic, key: [u8; 32]) -> Result<Option<[u8; 32]>> {
-        Ok(self.db.insert(topic, &key)?.map(to_fixed_bytes32))
+    pub fn set(&self, topic: &Topic<'static>, key: [u8; 32]) -> Result<Option<[u8; 32]>> {
+        let write_txn = self.db.begin_write()?;
+        let old_value = {
+            let mut table = write_txn.open_table(TABLE)?;
+            let ret = table.insert(topic, key)?;
+            ret.map(|v| v.value())
+        };
+        write_txn.commit()?;
+        Ok(old_value)
     }
 
     /// Get a symmetric key under a [`Topic`]
-    pub fn get(&self, topic: &Topic) -> Result<Option<[u8; 32]>> {
-        Ok(self.db.get(topic)?.map(to_fixed_bytes32))
+    pub fn get(&self, topic: &Topic<'static>) -> Result<Option<[u8; 32]>> {
+        let read_txn = self.db.begin_read()?;
+        let table = read_txn.open_table(TABLE)?;
+        Ok(table.get(topic)?.map(|v| v.value()))
     }
 
     /// Delete a [`Topic`] SymmetricKey mapping
-    pub fn delete(&self, topic: &Topic) -> Result<()> {
-        let _ = self.db.remove(topic)?;
+    pub fn delete(&self, topic: &Topic<'static>) -> Result<()> {
+        let write_txn = self.db.begin_write()?;
+        {
+            let mut table = write_txn.open_table(TABLE)?;
+            let _value_guard = table.remove(topic)?;
+        }
+        write_txn.commit()?;
+
         Ok(())
     }
 
     /// Check if the database contains a key
-    pub fn contains(&self, topic: &Topic) -> Result<bool> {
-        Ok(self.db.contains_key(topic)?)
+    pub fn contains(&self, topic: &Topic<'static>) -> Result<bool> {
+        Ok(self.get(topic)?.is_some())
     }
 }

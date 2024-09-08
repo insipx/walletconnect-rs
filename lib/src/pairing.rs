@@ -3,25 +3,36 @@
 mod types;
 mod uri;
 
+use std::sync::Arc;
+
 use chrono::Utc;
 use const_format::concatcp;
 use rand::{rngs::OsRng, RngCore};
-use sled::Tree;
+use redb::TableDefinition;
 pub use uri::*;
 
 use self::types::*;
 use crate::{
     crypto::Crypto, error::PairingError, expirations::ExpiryManager, relayer::Relayer, time,
-    WalletContext, STORAGE_PREFIX,
+    types::Topic, WalletContext, STORAGE_PREFIX,
 };
 
 pub type Result<T> = std::result::Result<T, PairingError>;
+
 pub const PAIRING: &str = "pairing";
 pub const VERSION: u16 = 1;
 pub const NAMESPACE: &str = concatcp!(STORAGE_PREFIX, ":", VERSION, "//", PAIRING);
+const TABLE: TableDefinition<&Topic, [u8; 32]> = TableDefinition::new(NAMESPACE);
+
+fn to_fixed_bytes32<V: AsRef<[u8]>>(v: V) -> [u8; 32] {
+    let mut fixed = [0u8; 32];
+    let slice = v.as_ref();
+    fixed.copy_from_slice(&slice[0..32]);
+    fixed
+}
 
 pub struct Pairing {
-    pairings: Tree,
+    db: Arc<redb::Database>,
     crypto: Crypto,
     relayer: Relayer,
     expirer: ExpiryManager,
@@ -29,14 +40,14 @@ pub struct Pairing {
 
 impl Pairing {
     pub fn new(context: &WalletContext) -> Result<Self> {
-        let tree = context.db.open_tree(NAMESPACE)?;
+        let db = context.db.clone();
         let expirer = ExpiryManager::new(context)?;
         let relayer = Relayer::new(context);
 
-        Ok(Self { pairings: tree, relayer, crypto: Crypto::new(context)?, expirer })
+        Ok(Self { db, relayer, crypto: Crypto::new(context)?, expirer })
     }
 
-    pub async fn create(&mut self) -> Result<([u8; 32], PairingUri)> {
+    pub async fn create(&mut self) -> Result<(Topic<'static>, PairingUri)> {
         let sym_key: [u8; 32] = {
             let mut bytes = [0u8; 32];
             let mut rng = OsRng;
@@ -47,7 +58,7 @@ impl Pairing {
         // set a 5-minute TTL
         let ttl = Utc::now() + (time::MINUTE * 5);
 
-        let uri = PairingUri::builder(topic)
+        let uri = PairingUri::builder(topic.clone())
             .version(2)
             .protocol("irn")
             .symmetric_key(sym_key)
@@ -65,7 +76,7 @@ impl Pairing {
     //    this.isValidPair(params);
     //    const { topic, symKey, relay, expiryTimestamp, methods } = parseUri(params.uri);
     //    let existingPairing;
-    //    if (this.pairings.keys.includes(topic)) {
+    //    if (this.pairings.keys.includes(topic))
     //      existingPairing = this.pairings.get(topic);
     //      if (existingPairing.active) {
     //        throw new Error(
@@ -94,16 +105,24 @@ impl Pairing {
     //  };
     //
 
-    pub fn set(&self, topic: &[u8; 32], pairing: PairingMetadata) -> Result<()> {
+    pub fn set(&self, topic: &Topic<'static>, pairing: PairingMetadata) -> Result<()> {
+        let write_txn = self.db.begin_write()?;
         let bytes =
             rkyv::to_bytes::<_, 16>(&pairing).map_err(|e| PairingError::Rkyv(e.to_string()))?;
-        self.pairings.insert(topic, bytes.as_slice())?;
+        {
+            let mut table = write_txn.open_table(TABLE)?;
+            let _ret = table.insert(topic, to_fixed_bytes32(bytes))?;
+            // ret.map(|v| v.value())
+        };
+        write_txn.commit()?;
         Ok(())
     }
 
-    pub fn get(&self, topic: &[u8; 32]) -> Result<Option<PairingMetadata>> {
-        // let bytes = rkyv::to_bytes::<_, 16>(&
-        let bytes = self.pairings.get(topic)?;
+    pub fn get(&self, topic: &Topic<'static>) -> Result<Option<PairingMetadata>> {
+        let read_txn = self.db.begin_read()?;
+        let table = read_txn.open_table(TABLE)?;
+        let bytes = table.get(topic)?.map(|v| v.value());
+
         Ok(match bytes {
             Some(bytes) => {
                 let pairing = rkyv::from_bytes::<PairingMetadata>(&bytes)
@@ -114,10 +133,19 @@ impl Pairing {
         })
     }
 
-    pub async fn pair(&self, uri: PairingUri, is_active: bool) -> Result<()> {
+    pub async fn pair(&self, uri: PairingUri<'static>, is_active: bool) -> Result<()> {
         // is initialized
         // is valid pair
         let (topic, sym_key, timestamp, relay, _) = uri.decompose();
+        if let Ok(Some(pairing)) = self.get(&topic) {
+            if pairing.is_active() {
+                panic!("Pairing already exists");
+            }
+        }
+
+        let expiry = timestamp.unwrap_or(&(Utc::now() + (time::MINUTE * 5)));
+
+        // let pairing = PairingMetadata::new(
         /*
                 if let Some(pairing) = self.get(topic) {
                     // if pairing.

@@ -1,6 +1,7 @@
 use crate::{
     error::RelayerError,
     rpc::{api::core::RelayClient, prelude::Subscription, Client},
+    types::Topic,
     WalletContext,
 };
 
@@ -16,7 +17,7 @@ impl Relayer {
         Self { rpc: context.rpc.clone(), subscriptions: vec![] }
     }
 
-    pub async fn subscribe(&mut self, topic: &[u8; 32]) -> Result<()> {
+    pub async fn subscribe(&mut self, topic: &Topic<'static>) -> Result<()> {
         let subscription = self.rpc.inner().relay_subscribe(hex::encode(topic)).await?;
         self.subscriptions.push(subscription);
         Ok(())

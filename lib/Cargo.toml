@@ -17,6 +17,7 @@ chrono = { workspace = true, features = ["rkyv-32", "rkyv-validation"]}
 derive_more.workspace = true
 sha2 = "0.10"
 sled = "0.34.7"
+redb = "2.1"
 const_format = "0.2.32"
 peg = "0.8"
 enum-as-inner = "0.6"

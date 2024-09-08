@@ -4,8 +4,8 @@ use thiserror::Error;
 /// Top-Level WalletConnect Error
 #[derive(Error, Debug)]
 pub enum WalletConnectError {
-    #[error("DB Error {0}")]
-    Db(#[from] sled::Error),
+    #[error(transparent)]
+    Db(#[from] redb::DatabaseError),
     #[error(transparent)]
     Rpc(#[from] walletconnect_rpc::error::ClientError),
 }
@@ -19,8 +19,14 @@ pub enum TypeError {
 
 #[derive(Debug, Error)]
 pub enum KeychainError {
-    #[error("Error occured in Keychain Database Tree {0}")]
-    Db(#[from] sled::Error),
+    #[error(transparent)]
+    Table(#[from] redb::TableError),
+    #[error(transparent)]
+    Db(#[from] redb::TransactionError),
+    #[error(transparent)]
+    Storage(#[from] redb::StorageError),
+    #[error(transparent)]
+    Commit(#[from] redb::CommitError),
 }
 
 #[derive(Debug, Error)]
@@ -33,8 +39,6 @@ pub enum CryptoError {
 pub enum PairingError {
     #[error(transparent)]
     Crypto(#[from] CryptoError),
-    #[error("Error occured in Pairing Database Tree {0}")]
-    Db(#[from] sled::Error),
     #[error(transparent)]
     Rpc(#[from] crate::rpc::error::JsonRpcError),
     #[error(transparent)]
@@ -43,12 +47,26 @@ pub enum PairingError {
     Relayer(#[from] RelayerError),
     #[error("Rkyv Error {0}")]
     Rkyv(String),
+    #[error(transparent)]
+    Table(#[from] redb::TableError),
+    #[error(transparent)]
+    Db(#[from] redb::TransactionError),
+    #[error(transparent)]
+    Storage(#[from] redb::StorageError),
+    #[error(transparent)]
+    Commit(#[from] redb::CommitError),
 }
 
 #[derive(Debug, Error)]
 pub enum ExpiryError {
-    #[error("Error occured in Expiry Database Tree {0}")]
-    Db(#[from] sled::Error),
+    #[error(transparent)]
+    Table(#[from] redb::TableError),
+    #[error(transparent)]
+    Db(#[from] redb::TransactionError),
+    #[error(transparent)]
+    Storage(#[from] redb::StorageError),
+    #[error(transparent)]
+    Commit(#[from] redb::CommitError),
     #[error("{0}")]
     Other(String),
 }
