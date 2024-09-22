@@ -1,16 +1,19 @@
 #![feature(trivial_bounds)]
 use std::{path::Path, sync::Arc};
 
+use chrono::{DateTime, Utc};
 use rpc::Client;
 
 use crate::error::WalletConnectError;
 
 pub mod crypto;
 pub mod error;
+mod events;
 mod expirations;
 pub mod pairing;
 mod relayer;
 pub mod types;
+pub use self::types::*;
 
 /// RPC Api Re-Export
 pub mod rpc {
@@ -19,6 +22,9 @@ pub mod rpc {
 }
 
 pub const STORAGE_PREFIX: &str = "wc@2:core-rs";
+
+/// The global Events loop
+// static EVENTS: LazyLock<events::Events> = LazyLock::new(events::Events::new);
 
 pub type Result<T> = std::result::Result<T, WalletConnectError>;
 
@@ -34,6 +40,10 @@ impl WalletContext {
         let rpc = Client::new().await?;
         Ok(Self { db: Arc::new(redb::Database::create(path)?), rpc })
     }
+}
+
+pub(crate) fn default_timestamp() -> DateTime<Utc> {
+    Utc::now() + (time::MINUTE * 5)
 }
 
 /// The symmetric public key used for encryption

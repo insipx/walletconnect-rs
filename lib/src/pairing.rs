@@ -11,7 +11,7 @@ use rand::{rngs::OsRng, RngCore};
 use redb::TableDefinition;
 pub use uri::*;
 
-use self::types::*;
+pub use self::types::*;
 use crate::{
     crypto::Crypto, error::PairingError, expirations::ExpiryManager, relayer::Relayer, time,
     types::Topic, WalletContext, STORAGE_PREFIX,
@@ -36,15 +36,15 @@ pub struct Pairing {
     crypto: Crypto,
     relayer: Relayer,
     expirer: ExpiryManager,
+    events: crate::events::GlobalEvents,
 }
 
 impl Pairing {
-    pub fn new(context: &WalletContext) -> Result<Self> {
+    pub fn new(context: &WalletContext, events: crate::events::GlobalEvents) -> Result<Self> {
         let db = context.db.clone();
         let expirer = ExpiryManager::new(context)?;
         let relayer = Relayer::new(context);
-
-        Ok(Self { db, relayer, crypto: Crypto::new(context)?, expirer })
+        Ok(Self { db, relayer, crypto: Crypto::new(context)?, expirer, events })
     }
 
     pub async fn create(&mut self) -> Result<(Topic<'static>, PairingUri)> {
@@ -96,7 +96,7 @@ impl Pairing {
     //
     //    this.events.emit(PAIRING_EVENTS.create, pairing);
     //
-    //    // avoid overwriting keychain pairing already exists
+    //   // avoid overwriting keychain pairing already exists
     //    if (!this.core.crypto.keychain.has(topic)) {
     //      await this.core.crypto.setSymKey(symKey, topic);
     //    }
@@ -133,24 +133,36 @@ impl Pairing {
         })
     }
 
-    pub async fn pair(&self, uri: PairingUri<'static>, is_active: bool) -> Result<()> {
+    pub async fn pair(
+        &self,
+        uri: PairingUri<'static>,
+        is_active: bool,
+        activate: bool,
+    ) -> Result<()> {
         // is initialized
         // is valid pair
-        let (topic, sym_key, timestamp, relay, _) = uri.decompose();
-        if let Ok(Some(pairing)) = self.get(&topic) {
-            if pairing.is_active() {
-                panic!("Pairing already exists");
-            }
-        }
 
-        let expiry = timestamp.unwrap_or(&(Utc::now() + (time::MINUTE * 5)));
-
-        // let pairing = PairingMetadata::new(
-        /*
-                if let Some(pairing) = self.get(topic) {
-                    // if pairing.
+        let topic = {
+            let (topic, _, timestamp, _relay, _) = uri.decompose();
+            if let Ok(Some(pairing)) = self.get(&topic) {
+                if pairing.is_active() {
+                    panic!("Pairing already exists");
                 }
-        */
+            }
+            let default = crate::default_timestamp();
+            let expiry = timestamp.unwrap_or(&default);
+            self.expirer.set_expiry(&topic, expiry.timestamp_millis() as u64)?;
+            topic
+        };
+
+        let pairing = PairingMetadata::new(uri, false, None, Default::default());
+        self.set(&topic, pairing)?;
+
+        if activate {
+            // self.activate
+        }
+        self.events.emit(PairingEvent::Create);
+
         Ok(())
     }
 }

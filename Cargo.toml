@@ -13,7 +13,7 @@ tracing = "0.1"
 tracing-subscriber = {version = "0.3", features = ["env-filter"] }
 walletconnect-rpc = { path = "./rpc" }
 walletconnect-lib = { path = "./lib" }
-tokio = { version = "1.36", features = ["full"] }
+tokio = { version = "1.40", default-featuers = false }
 thiserror = "1.0.24"
 anyhow = "1.0"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
@@ -23,4 +23,4 @@ serde_json = "1"
 hex = { version = "0.4", features = ["serde"]}
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"]}
-derive_more = "0.99"
+derive_more = "1"

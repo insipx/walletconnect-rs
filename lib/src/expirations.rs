@@ -38,3 +38,8 @@ impl ExpiryManager {
         Ok(table.get(topic)?.map(|v| v.value()))
     }
 }
+
+#[derive(Clone, Copy)]
+pub enum ExpirationEvent {
+    TestEvent,
+}

@@ -26,7 +26,7 @@ peg::parser! {
             = "wc:" t:topic() "@" v:version() "?" p:parameters() { PairingUri { topic: Topic::new(t), version: v.parse().expect("Must be u16"), parameters: Parameters(p) } }
 
         rule topic() -> &'input str
-            = t:$(unreserved()+) { t.into() }
+            = t:$(unreserved()+) { t }
 
         rule version() -> String
             = v:$(DIGIT()+) { v.to_string() }
@@ -272,13 +272,13 @@ impl PairingParameter {
 #[archive_attr(derive(Hash, PartialEq, Eq))]
 #[archive(check_bytes)]
 pub enum Parameter {
-    #[display(fmt = "symKey")]
+    #[display("symKey")]
     SymKey,
-    #[display(fmt = "expiryTimestamp")]
+    #[display("expiryTimestamp")]
     ExpiryTimestamp,
-    #[display(fmt = "relay-protocol")]
+    #[display("relay-protocol")]
     RelayProtocol,
-    #[display(fmt = "{}", _0)]
+    #[display("{}", _0)]
     Other(String),
 }
 

@@ -23,7 +23,13 @@ pub struct Metadata {
     */
 }
 
-/// A Topic, by default the sha257 hash of the symmetric key
+#[derive(Clone, Copy)]
+pub enum GlobalEvent {
+    Pairing(super::pairing::PairingEvent),
+    Expiration(super::expirations::ExpirationEvent),
+}
+
+/// A Topic, by default the sha256 hash of the symmetric key
 /// but it _can_ be any string.
 #[derive(
     rkyv::Archive,

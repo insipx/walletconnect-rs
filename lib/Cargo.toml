@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 tracing.workspace = true
 log.workspace = true
+tokio = { workspace = true, features = ["sync"] }
 thiserror.workspace = true
 ed25519-dalek.workspace = true
 x25519-dalek.workspace = true
@@ -14,9 +15,8 @@ serde.workspace = true
 serde_json.workspace = true
 hex.workspace = true
 chrono = { workspace = true, features = ["rkyv-32", "rkyv-validation"]}
-derive_more.workspace = true
+derive_more = {workspace = true, features = ["display"]}
 sha2 = "0.10"
-sled = "0.34.7"
 redb = "2.1"
 const_format = "0.2.32"
 peg = "0.8"

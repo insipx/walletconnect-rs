@@ -1,6 +1,6 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::{pairing::uri::PairingUri, types::Metadata};
+use crate::{expirations::ExpirationEvent, pairing::uri::PairingUri, types::Metadata};
 
 #[derive(Archive, Deserialize, Serialize)]
 #[archive(check_bytes)]
@@ -23,5 +23,19 @@ impl PairingMetadata {
 
     pub fn is_active(&self) -> bool {
         self.is_active
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PairingEvent {
+    Create,
+    Expire,
+    Delete,
+    Ping,
+}
+
+impl From<PairingEvent> for crate::GlobalEvent {
+    fn from(event: PairingEvent) -> crate::GlobalEvent {
+        crate::GlobalEvent::Pairing(event)
     }
 }
