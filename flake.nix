@@ -9,12 +9,12 @@
     environments.url = "github:insipx/environments";
     flake-utils.url = "github:numtide/flake-utils";
   };
-  outputs = { self, nixpkgs, flake-utils, fenix, environments }:
+  outputs = { nixpkgs, flake-utils, fenix, environments, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        isDarwin = pkgs.stdenv.isDarwin;
-        frameworks = pkgs.darwin.apple_sdk.frameworks;
+        inherit (pkgs.stdenv) isDarwin;
+        inherit (pkgs.darwin.apple_sdk) frameworks;
         fenixPkgs = fenix.packages.${system};
         linters = import "${environments}/linters.nix" { inherit pkgs; };
         rust-toolchain = with fenixPkgs;
@@ -23,6 +23,7 @@
             default.cargo
             default.clippy
             default.rustfmt
+            (complete.withComponents [ "rustc-codegen-cranelift-preview" ])
           ];
         nativeBuildInputs = with pkgs; [ pkg-config ];
         buildInputs = with pkgs;
