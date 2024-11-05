@@ -11,9 +11,10 @@
 use std::{collections::HashMap, fmt, str::FromStr};
 
 use chrono::{DateTime, Utc};
+use rkyv::Archive;
 use serde::{Deserialize, Serialize};
 
-use crate::{error::TypeError, Topic};
+use crate::{error::TypeError, types::Topic};
 
 fn timestamp_to_datetime(secs: &str) -> DateTime<Utc> {
     DateTime::from_timestamp(secs.parse().expect("Must be digits"), 0).expect("Must be in range")
@@ -21,11 +22,11 @@ fn timestamp_to_datetime(secs: &str) -> DateTime<Utc> {
 
 peg::parser! {
     grammar pairing_uri_parser() for str {
-        pub rule uri() -> PairingUri
-            = "wc:" t:topic() "@" v:version() "?" p:parameters() { PairingUri { topic: t, version: v.parse().expect("Must be u16"), parameters: Parameters(p) } }
+        pub rule uri() -> PairingUri<'input>
+            = "wc:" t:topic() "@" v:version() "?" p:parameters() { PairingUri { topic: Topic::new(t), version: v.parse().expect("Must be u16"), parameters: Parameters(p) } }
 
-        rule topic() -> String
-            = t:$(unreserved()+) { t.to_string() }
+        rule topic() -> &'input str
+            = t:$(unreserved()+) { t }
 
         rule version() -> String
             = v:$(DIGIT()+) { v.to_string() }
@@ -56,9 +57,19 @@ peg::parser! {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct PairingUri {
-    pub topic: String,
+#[derive(
+    Serialize,
+    Deserialize,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    rkyv::Archive,
+    Debug,
+    Clone,
+    PartialEq,
+)]
+#[archive(check_bytes)]
+pub struct PairingUri<'a> {
+    pub topic: Topic<'a>,
     version: u16,
     #[serde(flatten)]
     parameters: Parameters,
@@ -66,29 +77,53 @@ pub struct PairingUri {
 
 // wc:3eeb85bb4f5e2c76ca9834be52d9444a418c71816ea3447cdad5ea1389010ac1@2?expiryTimestamp=1709402854&
 // relay-protocol=irn&symKey=970246c97a4a60a5102d1807ff31dac0e2abd7165fd8d41a2b5b9093c7a46cee
-impl PairingUri {
-    pub fn builder(topic: Topic) -> PairingUriBuilder {
+impl PairingUri<'_> {
+    pub fn builder(topic: Topic<'static>) -> PairingUriBuilder {
         PairingUriBuilder::new(topic)
     }
 
-    pub fn parse<S: AsRef<str>>(uri: S) -> Result<PairingUri, TypeError> {
-        pairing_uri_parser::uri(uri.as_ref()).map_err(Into::into)
+    /// Parse a pairing URI from an input `str`
+    pub fn parse<'a>(uri: &'a str) -> Result<PairingUri<'a>, TypeError> {
+        pairing_uri_parser::uri(uri).map_err(Into::into)
+    }
+
+    pub fn into_owned(self) -> PairingUri<'static> {
+        let PairingUri { topic, version, parameters } = self;
+        let topic = topic.into_owned();
+        PairingUri { topic, version, parameters }
     }
 
     pub fn param(&self, key: &Parameter) -> Option<&PairingParameter> {
         self.parameters.0.get(key)
     }
+
+    //TODO: we do not handle `Other` correctly
+    /// Decompose the PairingUri into its parts.
+    /// The parts are in order of `Topic`, `SymKey`, `ExpiryTimestamp`, `RelayProtocol` and a
+    /// [`Vec`] of any `String` representing [`PairingParameter::Other`]
+    pub fn decompose(
+        &self,
+    ) -> (Topic<'static>, Option<&[u8; 32]>, Option<&DateTime<Utc>>, Option<&String>, Vec<&String>)
+    {
+        (
+            self.topic.clone().into_owned(),
+            self.param(&Parameter::SymKey).map(|k| k.sym_key_unchecked()),
+            self.param(&Parameter::ExpiryTimestamp).map(|t| t.expiry_timestamp_unchecked()),
+            self.param(&Parameter::RelayProtocol).map(|r| r.relay_protocol_unchecked()),
+            vec![],
+        )
+    }
 }
 
 pub struct PairingUriBuilder {
-    pub topic: String,
+    pub topic: Topic<'static>,
     version: u16,
     parameters: HashMap<Parameter, PairingParameter>,
 }
 
 impl PairingUriBuilder {
-    pub fn new(topic: Topic) -> Self {
-        Self { topic: hex::encode(topic), version: 0, parameters: HashMap::new() }
+    pub fn new(topic: Topic<'static>) -> Self {
+        Self { topic, version: 0, parameters: HashMap::new() }
     }
 
     pub fn version(mut self, version: u16) -> Self {
@@ -102,9 +137,8 @@ impl PairingUriBuilder {
         self
     }
 
-    pub fn expiry_timestamp(mut self, timestamp: DateTime<Utc>) -> Self {
-        self.parameters
-            .insert(Parameter::ExpiryTimestamp, PairingParameter::ExpiryTimestamp(timestamp));
+    pub fn expiry_timestamp(mut self, time: DateTime<Utc>) -> Self {
+        self.parameters.insert(Parameter::ExpiryTimestamp, PairingParameter::ExpiryTimestamp(time));
         self
     }
 
@@ -118,7 +152,7 @@ impl PairingUriBuilder {
         self
     }
 
-    pub fn build(self) -> PairingUri {
+    pub fn build(self) -> PairingUri<'static> {
         PairingUri {
             topic: self.topic,
             version: self.version,
@@ -127,7 +161,18 @@ impl PairingUriBuilder {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Serialize,
+    Deserialize,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    rkyv::Archive,
+    Clone,
+    PartialEq,
+    Eq,
+)]
+#[archive(check_bytes)]
 pub struct Parameters(HashMap<Parameter, PairingParameter>);
 
 impl fmt::Display for Parameters {
@@ -146,7 +191,19 @@ impl fmt::Display for Parameters {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, enum_as_inner::EnumAsInner)]
+#[derive(
+    rkyv::Archive,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    enum_as_inner::EnumAsInner,
+)]
+#[archive(check_bytes)]
 pub enum PairingParameter {
     SymKey([u8; 32]),
     ExpiryTimestamp(DateTime<Utc>),
@@ -165,15 +222,63 @@ impl fmt::Display for PairingParameter {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash, Debug, PartialEq, Eq, derive_more::Display)]
+impl PairingParameter {
+    pub fn sym_key_unchecked(&self) -> &[u8; 32] {
+        if let PairingParameter::SymKey(key) = self {
+            key
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+
+    pub fn expiry_timestamp_unchecked(&self) -> &DateTime<Utc> {
+        if let PairingParameter::ExpiryTimestamp(timestamp) = self {
+            timestamp
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+
+    pub fn relay_protocol_unchecked(&self) -> &String {
+        if let PairingParameter::RelayProtocol(protocol) = self {
+            protocol
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+
+    pub fn other_unchecked(&self) -> &String {
+        if let PairingParameter::Other(o) = self {
+            o
+        } else {
+            panic!("unexpected; only decompose enum variant if certain of variant");
+        }
+    }
+}
+
+#[derive(
+    Serialize,
+    Deserialize,
+    rkyv::Serialize,
+    rkyv::Deserialize,
+    Archive,
+    Clone,
+    Hash,
+    Debug,
+    PartialEq,
+    Eq,
+    derive_more::Display,
+)]
+#[archive_attr(derive(Hash, PartialEq, Eq))]
+#[archive(check_bytes)]
 pub enum Parameter {
-    #[display(fmt = "symKey")]
+    #[display("symKey")]
     SymKey,
-    #[display(fmt = "expiryTimestamp")]
+    #[display("expiryTimestamp")]
     ExpiryTimestamp,
-    #[display(fmt = "relay-protocol")]
+    #[display("relay-protocol")]
     RelayProtocol,
-    #[display(fmt = "{}", _0)]
+    #[display("{}", _0)]
     Other(String),
 }
 
@@ -188,34 +293,35 @@ impl<S: AsRef<str>> From<S> for Parameter {
     }
 }
 
-impl fmt::Display for PairingUri {
+impl fmt::Display for PairingUri<'static> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Self { topic, version, parameters } = self;
         write!(f, "wc:{}@{}?{}", topic, version, parameters)
     }
 }
 
-impl FromStr for PairingUri {
+impl FromStr for PairingUri<'static> {
     type Err = TypeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        PairingUri::parse(s)
+        let parsed = PairingUri::parse(s)?;
+        Ok(parsed.into_owned())
     }
 }
 
-impl TryFrom<&str> for PairingUri {
+impl<'a> TryFrom<&'a str> for PairingUri<'a> {
     type Error = TypeError;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         PairingUri::parse(value)
     }
 }
 
-impl TryFrom<String> for PairingUri {
+impl TryFrom<String> for PairingUri<'static> {
     type Error = TypeError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        PairingUri::parse(value)
+        Ok(PairingUri::parse(&value)?.into_owned())
     }
 }
 
@@ -231,7 +337,7 @@ mod tests {
         let result = pairing_uri_parser::uri(uri).unwrap();
         assert_eq!(
             result.topic,
-            "1a41cdac130112b6f0cd364572bc71c2850256a0242ae9281616c0afefd09d15"
+            "1a41cdac130112b6f0cd364572bc71c2850256a0242ae9281616c0afefd09d15".into()
         );
         assert_eq!(result.version, 2);
         assert_eq!(result.parameters.0.len(), 3);
@@ -246,16 +352,18 @@ mod tests {
     #[test]
     fn test_pairing_uri_builder() {
         let now = Utc::now();
-        let uri = PairingUri::builder([0u8; 32])
-            .version(999)
-            .protocol("irn")
-            .symmetric_key([0u8; 32])
-            .expiry_timestamp(now)
-            .parameter("random".to_string(), "moreRandom".to_string())
-            .build();
+        let uri = PairingUri::builder(
+            "0000000000000000000000000000000000000000000000000000000000000000".into(),
+        )
+        .version(999)
+        .protocol("irn")
+        .symmetric_key([0u8; 32])
+        .expiry_timestamp(now)
+        .parameter("random".to_string(), "moreRandom".to_string())
+        .build();
 
         let uri = uri.to_string();
-
+        println!("URI: {}", uri);
         assert!(uri.contains(&format!("expiryTimestamp={}", now.timestamp())));
         assert!(uri.contains(&"relay-protocol=irn".to_string()));
         assert!(uri.contains(&"random=moreRandom".to_string()));
@@ -263,7 +371,7 @@ mod tests {
         assert!(uri
             .contains("wc:0000000000000000000000000000000000000000000000000000000000000000@999?"));
 
-        let uri = PairingUri::parse(uri).unwrap();
+        let uri = PairingUri::parse(&uri).unwrap();
         assert_eq!(uri.param(&Parameter::SymKey), Some(&PairingParameter::SymKey([0u8; 32])));
         assert_eq!(
             uri.param(&Parameter::ExpiryTimestamp),

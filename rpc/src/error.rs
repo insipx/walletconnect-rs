@@ -18,6 +18,10 @@ pub enum ClientError {
     Auth(#[from] AuthError),
     #[error(transparent)]
     JsonRpc(#[from] JsonRpcError),
+    #[error(transparent)]
+    QueryString(#[from] serde_qs::Error),
+    #[error(transparent)]
+    Url(#[from] url::ParseError),
 }
 
 #[derive(Debug, Error)]

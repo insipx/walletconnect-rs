@@ -4,7 +4,7 @@ use walletconnect_rpc::{api::core::RelayClient, Client};
 
 mod app;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     init_logging();
     color_eyre::install()?;
@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
 
     let client = Client::new().await?;
     log::info!("Client instantiated with pairing_uri: {:#?}", pairing_uri);
-    let val = client.inner().relay_subscribe(pairing_uri.topic.clone()).await?;
+    let val = client.inner().relay_subscribe(pairing_uri.topic.to_string()).await?;
     println!("\n[client1] subscribed: topic={}", pairing_uri.topic);
 
     Ok(())

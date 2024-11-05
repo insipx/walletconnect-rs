@@ -7,9 +7,6 @@ use crate::types::{common::*, sign::*};
 // https://specs.walletconnect.com/2.0/specs/clients/sign/rpc-methods
 #[rpc(client, namespace = "wc")]
 pub trait Sign {
-    // #[method(name = "sessionPropose", param_kind = map)]
-    // fn session_propose(&self, propose: SessionPropose) -> RpcResult<SessionProposeResult>;
-
     #[method(name = "sessionPropose", param_kind = map)]
     fn session_propose(
         &self,
@@ -78,18 +75,15 @@ mod tests {
             };
             let mut required_namespaces = HashMap::new();
             required_namespaces.insert("eip155".to_string(), eip155);
-            let result = client
-                .inner()
-                .session_propose(relays, proposer, required_namespaces)
-                .await
-                .unwrap();
+            let result =
+                client.inner().session_propose(relays, proposer, required_namespaces).await;
             println!("result = {:?}", result);
             // assert_eq!(result, SessionProposeResult { status: "ok".to_string() });
             Ok(())
         })
         .await
     }
-    
+
     /*
     #[tokio::test]
     async fn test_ping() -> Result<()> {

@@ -5,6 +5,7 @@ pub mod types;
 
 use std::sync::Arc;
 
+use auth::RELAY_WEBSOCKET_ADDRESS;
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use jsonrpsee::{
     core::traits::IdKind,
@@ -13,16 +14,24 @@ use jsonrpsee::{
 };
 use rand::Rng as _;
 
-use crate::{auth::AuthToken, error::ClientError};
+use crate::{
+    auth::{AuthToken, SerializedAuthToken},
+    error::ClientError,
+};
 
-// Awalletconnect-rs-new
-pub const PROJECT_ID: &str = "c391bf7391b67ffbd8b8241389471ef8";
-
+/// This is required to avoid request id collisions
 pub const REQUEST_ID_ENTROPY: u32 = 6;
+
+pub mod prelude {
+    pub use jsonrpsee::core::client::Subscription;
+
+    pub use super::api::core::*;
+    // pub use jsonrpsee::Subscription;
+}
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: Arc<WsClient<RequestIdGen>>,
+    pub client: Arc<WsClient<RequestIdGen>>,
     key: SigningKey,
 }
 
@@ -42,19 +51,28 @@ impl IdKind for RequestIdGen {
 }
 
 impl Client {
-    pub async fn new() -> Result<Self, ClientError> {
+    pub async fn new(project_id: &str, url: &str) -> Result<Self, ClientError> {
         let key = SigningKey::generate(&mut rand::thread_rng());
-
-        let token = AuthToken::builder("http://example.com")
-            .aud("wss://relay.walletconnect.com")
+        let token = AuthToken::builder(url)
+            .aud(RELAY_WEBSOCKET_ADDRESS)
             .ttl(std::time::Duration::from_secs(60 * 60))
             .build()
             .as_jwt(&key)?;
 
-        let client = WsClientBuilder::<RequestIdGen>::default()
-            .id_format(RequestIdGen)
-            .build(format!("wss://relay.walletconnect.com/?projectId={PROJECT_ID}&auth={token}"))
-            .await?;
+        #[derive(serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct QueryParams<'a> {
+            project_id: &'a str,
+            auth: &'a auth::SerializedAuthToken,
+        }
+
+        let query = serde_qs::to_string(&QueryParams { project_id, auth: &token })?;
+
+        let mut url = url::Url::parse(RELAY_WEBSOCKET_ADDRESS)?;
+        url.set_query(Some(&query));
+
+        let client: WsClient<RequestIdGen> =
+            WsClientBuilder::<RequestIdGen>::new().id_format(RequestIdGen).build(url).await?;
 
         let client = Arc::new(client);
 
@@ -62,8 +80,8 @@ impl Client {
     }
 
     /// Get the inner WsClient
-    pub fn inner(&self) -> &WsClient<RequestIdGen> {
-        &self.client
+    pub fn inner(&self) -> Arc<WsClient<RequestIdGen>> {
+        self.client.clone()
     }
 
     /// The the ed25519 public key associated with the session
@@ -97,7 +115,9 @@ mod test {
     where
         R: Future<Output = Result<()>>,
     {
-        let client = Client::new().await?;
+        let project_id = "684fc89c60a55ca93cd98576c86a73c9";
+        let url = "https://github.com/insipx/walletconnect-rs-new";
+        let client = Client::new(project_id, url).await?;
         fun(client).await?;
         Ok(())
     }

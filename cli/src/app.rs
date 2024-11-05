@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use walletconnect_lib::pairing::PairingUri;
 use walletconnect_rpc::types::*;
 
 /// Example pairing CLI for WalletConnect
@@ -6,5 +7,5 @@ use walletconnect_rpc::types::*;
 pub struct App {
     /// the pairing URI
     #[argh(option, short = 'p')]
-    pub pairing_uri: PairingUri,
+    pub pairing_uri: PairingUri<'static>,
 }

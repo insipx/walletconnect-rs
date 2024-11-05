@@ -23,7 +23,6 @@ mod tests {
     async fn test_relay_subscribe() -> Result<(), Error> {
         with_client(|client| async move {
             println!("client={:?}", client);
-
             // let sub = client.relay_subscribe(topic).await.unwrap();
             Ok(())
         })
