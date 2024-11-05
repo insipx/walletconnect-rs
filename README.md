@@ -13,3 +13,5 @@ Goals:
 
 NonGoals:
 - Full compatibility with walletconnect proto. Only really care about signing operations latest version.
+
+created mostly for use in [xchat](https://github.com/insipx/xchat) to allow for connecting my mobile wallet to my terminal chat app
