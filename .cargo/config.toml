@@ -6,3 +6,4 @@ codegen-backend = true
 
 [profile.dev]
 codegen-backend = "cranelift"
+paths = ["/Users/insipx/Projects/parity/workspace-jsonrpsee/insipx/custom-id/"]
