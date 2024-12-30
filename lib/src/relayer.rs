@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     error::RelayerError,
     rpc::{api::core::RelayClient, prelude::Subscription, Client},
@@ -14,7 +16,7 @@ pub struct Relayer {
 
 impl Relayer {
     pub fn new(context: &WalletConnect) -> Self {
-        Self { rpc: context.rpc.clone(), subscriptions: vec![] }
+        Self { rpc: Arc::unwrap_or_clone(context.rpc.clone()), subscriptions: vec![] }
     }
 
     pub async fn subscribe(&mut self, topic: &Topic<'static>) -> Result<()> {

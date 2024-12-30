@@ -70,7 +70,7 @@ pub struct PairingUri<'a> {
 // wc:3eeb85bb4f5e2c76ca9834be52d9444a418c71816ea3447cdad5ea1389010ac1@2?expiryTimestamp=1709402854&
 // relay-protocol=irn&symKey=970246c97a4a60a5102d1807ff31dac0e2abd7165fd8d41a2b5b9093c7a46cee
 impl<'a> PairingUri<'a> {
-    pub fn builder(topic: Topic<'a>) -> PairingUriBuilder {
+    pub fn builder(topic: Topic<'a>) -> PairingUriBuilder<'a> {
         PairingUriBuilder::new(topic)
     }
 

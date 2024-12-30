@@ -1,6 +1,6 @@
 use speedy::{Readable, Writable};
 
-use crate::{expirations::ExpirationEvent, pairing::uri::PairingUri, types::Metadata};
+use crate::{pairing::uri::PairingUri, types::Metadata};
 
 #[derive(Readable, Writable)]
 pub struct PairingMetadata<'a> {

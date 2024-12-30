@@ -14,10 +14,7 @@ use jsonrpsee::{
 };
 use rand::Rng as _;
 
-use crate::{
-    auth::{AuthToken, SerializedAuthToken},
-    error::ClientError,
-};
+use crate::{auth::AuthToken, error::ClientError};
 
 /// This is required to avoid request id collisions
 pub const REQUEST_ID_ENTROPY: u32 = 6;
@@ -72,7 +69,7 @@ impl Client {
         url.set_query(Some(&query));
 
         let client: WsClient<RequestIdGen> =
-            WsClientBuilder::<RequestIdGen>::new().id_format(RequestIdGen).build(url).await?;
+            WsClientBuilder::<RequestIdGen>::default().id_format(RequestIdGen).build(url).await?;
 
         let client = Arc::new(client);
 

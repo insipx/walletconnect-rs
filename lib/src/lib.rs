@@ -39,7 +39,7 @@ impl WalletConnect {
     pub async fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
         let project_id = "684fc89c60a55ca93cd98576c86a73c9";
         let url = "https://github.com/insipx/walletconnect-rs-new";
-        let rpc = Client::new(project_id, url).await?;
+        let rpc = Arc::new(Client::new(project_id, url).await?);
         Ok(Self { db: Arc::new(redb::Database::create(path)?), rpc })
     }
 }

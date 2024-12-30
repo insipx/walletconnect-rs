@@ -1,11 +1,10 @@
 //! Manages the event loop for expirations of keypairs
 use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
 use const_format::concatcp;
 use redb::TableDefinition;
 
-use crate::{error::ExpiryError, types::Topic, WalletConnect, STORAGE_PREFIX};
+use crate::{types::Topic, WalletConnect, STORAGE_PREFIX};
 
 const TABLE: TableDefinition<&Topic, i64> = TableDefinition::new(NAMESPACE);
 

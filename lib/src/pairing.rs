@@ -14,9 +14,8 @@ pub use uri::*;
 
 pub use self::types::*;
 use crate::{
-    crypto::Crypto, error::PairingError, expirations::ExpiryManager, relayer::Relayer, time,
-    types::Topic, WalletConnect, STORAGE_PREFIX,
-    rpc::prelude::RelayClient,
+    crypto::Crypto, error::PairingError, expirations::ExpiryManager, relayer::Relayer,
+    rpc::prelude::RelayClient, time, types::Topic, WalletConnect, STORAGE_PREFIX,
 };
 
 pub type Result<T> = std::result::Result<T, PairingError>;
@@ -160,7 +159,7 @@ impl Pairing {
         }
 
         let default = crate::default_timestamp();
-        let expiry = timestamp.unwrap_or(&default);
+        let expiry = timestamp.unwrap_or(default);
         self.expirer.set_expiry(&topic, expiry)?;
         let pairing = PairingMetadata::new(uri.clone(), false, None, Default::default());
         self.set(&topic, pairing)?;
@@ -172,17 +171,17 @@ impl Pairing {
 
         if !self.crypto.keychain().contains(&topic)? {
             self.crypto
-                .set_symkey(*sym_key.ok_or(PairingError::Missing(SymKeyParam))?, Some(topic))?;
+                .set_symkey(*sym_key.ok_or(PairingError::Missing(SymKeyParam))?, Some(&topic))?;
         }
 
-        let subscription = self.rpc.client.relay_subscribe(topic.to_string())
+        let subscription = self.rpc.client.relay_subscribe(topic.to_string());
         Ok(())
     }
 
     pub async fn activate(&self, topic: &Topic<'static>) -> Result<()> {
         // isInitialized? not sure if needed
         let expiry = Utc::now() + (crate::time::DAY * 30);
-        self.expirer.set_expiry(topic, &expiry)?;
+        self.expirer.set_expiry(topic, expiry.timestamp_millis())?;
         Ok(())
     }
 }

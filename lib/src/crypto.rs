@@ -27,8 +27,9 @@ impl Crypto {
         key: [u8; 32],
         topic: Option<&Topic<'static>>,
     ) -> Result<Topic<'static>> {
-        let topic = topic.unwrap_or_else(|| hex::encode(hash_sha256(&key)).into());
-        let _ = self.keychain.set(topic, key)?;
+        let topic: Topic<'static> =
+            topic.map(Clone::clone).unwrap_or_else(|| hex::encode(hash_sha256(&key)).into());
+        let _ = self.keychain.set(&topic, key)?;
         Ok(topic)
     }
 
