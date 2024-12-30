@@ -7,7 +7,7 @@ use redb::TableDefinition;
 
 use crate::{error::ExpiryError, types::Topic, WalletConnect, STORAGE_PREFIX};
 
-const TABLE: TableDefinition<&Topic, u64> = TableDefinition::new(NAMESPACE);
+const TABLE: TableDefinition<&Topic, i64> = TableDefinition::new(NAMESPACE);
 
 pub type Result<T> = std::result::Result<T, crate::error::ExpiryError>;
 pub const EXPIRY: &str = "expiry";
@@ -23,9 +23,7 @@ impl ExpiryManager {
         Ok(Self { db: context.db.clone() })
     }
 
-    pub fn set_expiry(&self, topic: &Topic<'static>, expiry: &DateTime<Utc>) -> Result<()> {
-        let expiry: u64 =
-            expiry.timestamp_millis().try_into().map_err(|_| ExpiryError::MillisecondConversion)?;
+    pub fn set_expiry(&self, topic: &Topic<'static>, expiry: i64) -> Result<()> {
         let write_txn = self.db.begin_write()?;
         {
             let mut table = write_txn.open_table(TABLE)?;
@@ -35,7 +33,7 @@ impl ExpiryManager {
         Ok(())
     }
 
-    pub fn get_expiry(&self, topic: &Topic<'static>) -> Result<Option<u64>> {
+    pub fn get_expiry(&self, topic: &Topic<'static>) -> Result<Option<i64>> {
         let read_txn = self.db.begin_read()?;
         let table = read_txn.open_table(TABLE)?;
         Ok(table.get(topic)?.map(|v| v.value()))

@@ -1,17 +1,16 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use speedy::{Readable, Writable};
 
 use crate::{expirations::ExpirationEvent, pairing::uri::PairingUri, types::Metadata};
 
-#[derive(Archive, Deserialize, Serialize)]
-#[archive(check_bytes)]
-pub struct PairingMetadata {
-    uri: PairingUri<'static>,
+#[derive(Readable, Writable)]
+pub struct PairingMetadata<'a> {
+    uri: PairingUri<'a>,
     is_active: bool,
     peer_metadata: Option<Metadata>,
     methods: Vec<String>,
 }
 
-impl PairingMetadata {
+impl PairingMetadata<'_> {
     pub fn new(
         uri: PairingUri<'static>,
         is_active: bool,
@@ -23,6 +22,10 @@ impl PairingMetadata {
 
     pub fn is_active(&self) -> bool {
         self.is_active
+    }
+
+    pub fn into_owned(self) -> PairingMetadata<'static> {
+        PairingMetadata { uri: self.uri.into_owned(), ..self }
     }
 }
 

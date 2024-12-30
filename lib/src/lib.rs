@@ -1,7 +1,7 @@
 #![feature(trivial_bounds)]
 use std::{path::Path, sync::Arc};
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use rpc::Client;
 
 use crate::error::WalletConnectError;
@@ -44,8 +44,8 @@ impl WalletConnect {
     }
 }
 
-pub(crate) fn default_timestamp() -> DateTime<Utc> {
-    Utc::now() + (time::MINUTE * 5)
+pub(crate) fn default_timestamp() -> i64 {
+    (Utc::now() + (time::MINUTE * 5)).timestamp_millis()
 }
 
 /// The symmetric public key used for encryption

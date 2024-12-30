@@ -2,14 +2,12 @@
 use std::{borrow::Cow, cmp::Ord, fmt};
 
 use const_format::concatcp;
-use rkyv::Deserialize as _;
-// use serde::{Deserialize, Serialize};
+use speedy::{Readable, Writable};
 
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 pub const TYPE_NAME: &str = concatcp!("{PKG_NAME}-TOPIC");
 
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
-#[archive(check_bytes)]
+#[derive(Readable, Writable)]
 pub struct Metadata {
     name: String,
     description: String,
@@ -32,9 +30,8 @@ pub enum GlobalEvent {
 /// A Topic, by default the sha256 hash of the symmetric key
 /// but it _can_ be any string.
 #[derive(
-    rkyv::Archive,
-    rkyv::Serialize,
-    rkyv::Deserialize,
+    Readable,
+    Writable,
     PartialEq,
     Eq,
     PartialOrd,
@@ -44,8 +41,7 @@ pub enum GlobalEvent {
     serde::Serialize,
     serde::Deserialize,
 )]
-#[archive(check_bytes, compare(PartialEq, PartialOrd))]
-pub struct Topic<'a>(#[with(rkyv::with::AsOwned)] Cow<'a, str>);
+pub struct Topic<'a>(Cow<'a, str>);
 
 impl<'a> Topic<'a> {
     pub fn new(s: &'a str) -> Self {
@@ -58,11 +54,13 @@ impl<'a> Topic<'a> {
 }
 
 impl redb::Value for Topic<'static> {
-    type SelfType<'a> = Topic<'static>
+    type SelfType<'a>
+        = Topic<'static>
     where
         Self: 'a;
 
-    type AsBytes<'a> = &'a str
+    type AsBytes<'a>
+        = &'a str
     where
         Self: 'a;
 
@@ -96,11 +94,13 @@ impl redb::Value for Topic<'static> {
 }
 
 impl<'topic> redb::Value for &'topic Topic<'static> {
-    type SelfType<'a> = Topic<'static>
+    type SelfType<'a>
+        = Topic<'static>
     where
         Self: 'a;
 
-    type AsBytes<'a> = &'a str
+    type AsBytes<'a>
+        = &'a str
     where
         Self: 'a;
 
@@ -170,22 +170,16 @@ impl redb::Value for &'static Topic<'_> {
 
 impl redb::Key for Topic<'static> {
     fn compare(data1: &[u8], data2: &[u8]) -> std::cmp::Ordering {
-        let data1 = rkyv::check_archived_root::<Topic>(&data1[..]).unwrap();
-        let data2 = rkyv::check_archived_root::<Topic>(&data2[..]).unwrap();
-
-        let topic1: Topic = data1.deserialize(&mut rkyv::Infallible).expect("infallible");
-        let topic2: Topic = data2.deserialize(&mut rkyv::Infallible).expect("infallible");
+        let topic1 = Topic::read_from_buffer(data1).unwrap();
+        let topic2 = Topic::read_from_buffer(data2).unwrap();
         topic1.cmp(&topic2)
     }
 }
 
 impl redb::Key for &'static Topic<'static> {
     fn compare(data1: &[u8], data2: &[u8]) -> std::cmp::Ordering {
-        let data1 = rkyv::check_archived_root::<Topic>(&data1[..]).unwrap();
-        let data2 = rkyv::check_archived_root::<Topic>(&data2[..]).unwrap();
-
-        let topic1: Topic = data1.deserialize(&mut rkyv::Infallible).expect("infallible");
-        let topic2: Topic = data2.deserialize(&mut rkyv::Infallible).expect("infallible");
+        let topic1 = Topic::read_from_buffer(data1).unwrap();
+        let topic2 = Topic::read_from_buffer(data2).unwrap();
         topic1.cmp(&topic2)
     }
 }

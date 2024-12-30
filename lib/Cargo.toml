@@ -14,7 +14,7 @@ rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 hex.workspace = true
-chrono = { workspace = true, features = ["rkyv-32", "rkyv-validation"]}
+chrono.workspace = true
 derive_more = {workspace = true, features = ["display"]}
 sha2 = "0.10"
 redb = "2.1"
@@ -22,5 +22,5 @@ const_format = "0.2.32"
 peg = "0.8"
 enum-as-inner = "0.6"
 walletconnect-rpc = {path = "../rpc"}
-rkyv = { version = "0.7", features = ["validation"]}
+speedy = "0.8"
 url = "2.5"

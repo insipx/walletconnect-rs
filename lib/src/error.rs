@@ -61,6 +61,7 @@ pub enum PairingError {
     Keychain(#[from] KeychainError),
     #[error("Missing {0}")]
     Missing(Missing),
+    Speedy(#[from] speedy::Error),
 }
 
 #[derive(Debug)]

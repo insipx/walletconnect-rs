@@ -9,6 +9,7 @@ use chrono::Utc;
 use const_format::concatcp;
 use rand::{rngs::OsRng, RngCore};
 use redb::TableDefinition;
+use speedy::{Readable, Writable};
 pub use uri::*;
 
 pub use self::types::*;
@@ -74,7 +75,7 @@ impl Pairing {
             .expiry_timestamp(ttl)
             .build();
 
-        self.expirer.set_expiry(&topic, &ttl)?;
+        self.expirer.set_expiry(&topic, ttl.timestamp_millis())?;
         self.set(&topic, PairingMetadata::new(uri.clone(), false, None, Default::default()))?;
         self.relayer.subscribe(&topic).await?;
 
@@ -117,8 +118,7 @@ impl Pairing {
     /// Persist a pairing to the database
     pub fn set(&self, topic: &Topic<'static>, pairing: PairingMetadata) -> Result<()> {
         let write_txn = self.db.begin_write()?;
-        let bytes =
-            rkyv::to_bytes::<_, 16>(&pairing).map_err(|e| PairingError::Rkyv(e.to_string()))?;
+        let bytes = pairing.write_to_vec()?;
         {
             let mut table = write_txn.open_table(TABLE)?;
             let _ret = table.insert(topic, to_fixed_bytes32(bytes))?;
@@ -135,11 +135,7 @@ impl Pairing {
         let bytes = table.get(topic)?.map(|v| v.value());
 
         Ok(match bytes {
-            Some(bytes) => {
-                let pairing = rkyv::from_bytes::<PairingMetadata>(&bytes)
-                    .map_err(|e| PairingError::Rkyv(e.to_string()))?;
-                Some(pairing)
-            }
+            Some(bytes) => Some(PairingMetadata::read_from_buffer(&bytes)?.into_owned()),
             None => None,
         })
     }
@@ -162,9 +158,9 @@ impl Pairing {
                 panic!("Pairing already exists");
             }
         }
+
         let default = crate::default_timestamp();
         let expiry = timestamp.unwrap_or(&default);
-
         self.expirer.set_expiry(&topic, expiry)?;
         let pairing = PairingMetadata::new(uri.clone(), false, None, Default::default());
         self.set(&topic, pairing)?;

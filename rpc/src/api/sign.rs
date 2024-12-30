@@ -12,7 +12,7 @@ pub trait Sign {
         &self,
         relays: Vec<Relay>,
         proposer: Participant,
-        requiredNamespaces: NamespaceMap,
+        required_namespaces: NamespaceMap,
     ) -> RpcResult<SessionProposeResult>;
 
     #[method(name = "sessionSettle")]

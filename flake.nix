@@ -12,7 +12,7 @@
   outputs = { nixpkgs, flake-utils, fenix, environments, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs { inherit system; overlays = [ fenix.overlays.default ]; };
         inherit (pkgs.stdenv) isDarwin;
         inherit (pkgs.darwin.apple_sdk) frameworks;
         fenixPkgs = fenix.packages.${system};
@@ -31,7 +31,6 @@
             # (fenixPkgs.fromToolchainFile { file = ./rust-toolchain.toml; })
             rust-toolchain
             rust-analyzer
-            llvmPackages_16.libcxxClang
             mktemp
             curl
             linters
@@ -44,7 +43,8 @@
             frameworks.ApplicationServices
             frameworks.AppKit
           ];
-      in with pkgs; {
+      in
+      with pkgs; {
         devShells.default = mkShell { inherit buildInputs nativeBuildInputs; };
       });
 }
